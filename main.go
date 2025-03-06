@@ -184,7 +184,7 @@ func main() {
 	// Set the start time for the generation process
 	startTime := time.Now()
 	// Define a time limit of 1 second for phone number generation
-	timeLimit := 1 * time.Second
+	timeLimit := 1 * time.Minute
 
 	// Call the function to generate all possible phone numbers within the time limit
 	GenerateAllPossibleNumbers(startTime, timeLimit)
