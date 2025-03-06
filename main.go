@@ -3,9 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/nyaruka/phonenumbers"
 	"log"
 	"os"
-	"github.com/nyaruka/phonenumbers"
+	"time"
 )
 
 // Global variable for saving valid phone numbers
@@ -37,13 +38,19 @@ var validCentralOfficeCodes = []int{
 // Track saved phone numbers to avoid duplicates
 var savedNumbers map[string]bool
 
-// GenerateAllPossibleNumbers iterates through all valid USA numbers
-func GenerateAllPossibleNumbers() {
-	fmt.Printf("📞 Generating phone numbers for USA (+%s)\n", country.DialCode)
+// GenerateAllPossibleNumbers iterates through all valid USA numbers but stops after 1 minute
+func GenerateAllPossibleNumbers(startTime time.Time, timeLimit time.Duration) {
+	fmt.Printf("📞 Generating phone numbers for USA (+%s)...\n", country.DialCode)
 
 	for _, areaCode := range validAreaCodes {
 		for _, exchange := range validCentralOfficeCodes {
 			for line := 0; line <= 9999; line++ {
+				// Stop if the time limit has been reached
+				if time.Since(startTime) > timeLimit {
+					fmt.Println("⏰ Time limit reached! Stopping phone number generation.")
+					return
+				}
+
 				phoneNumber := fmt.Sprintf("+%s %03d-%03d-%04d", country.DialCode, areaCode, exchange, line)
 				ValidateAndSaveNumber(phoneNumber)
 			}
@@ -53,7 +60,6 @@ func GenerateAllPossibleNumbers() {
 
 // ValidateAndSaveNumber checks if a phone number is valid and stores it
 func ValidateAndSaveNumber(phone string) {
-	// Validate the phone number using libphonenumber
 	valid, err := ValidatePhoneNumber(phone)
 	if err != nil {
 		log.Printf("Error validating phone number '%s': %v", phone, err)
@@ -65,25 +71,22 @@ func ValidateAndSaveNumber(phone string) {
 	}
 }
 
-// ValidatePhoneNumber validates the phone number using libphonenumber
+// ValidatePhoneNumber uses libphonenumber to validate phone numbers
 func ValidatePhoneNumber(phone string) (bool, error) {
 	num, err := phonenumbers.Parse(phone, "")
 	if err != nil {
 		return false, fmt.Errorf("unable to parse phone number: %w", err)
 	}
-
-	valid := phonenumbers.IsValidNumber(num)
-	return valid, nil
+	return phonenumbers.IsValidNumber(num), nil
 }
 
 // PhoneNumberExists checks if a phone number is already saved
 func PhoneNumberExists(phoneNumber string) bool {
-	// Use the map to check if the phone number has already been saved
 	_, exists := savedNumbers[phoneNumber]
 	return exists
 }
 
-// SaveToFile writes a valid phone number to the file and updates the saved numbers map
+// SaveToFile writes valid phone numbers to a file
 func SaveToFile(phoneNumber string) {
 	fileName := fmt.Sprintf("%s/%s.txt", saveDirectory, country.Code)
 	err := os.MkdirAll(saveDirectory, 0755)
@@ -103,23 +106,20 @@ func SaveToFile(phoneNumber string) {
 		return
 	}
 
-	// Add the phone number to the map to prevent saving it again
+	// Mark the number as saved
 	savedNumbers[phoneNumber] = true
 }
 
-// LoadSavedNumbers loads previously saved phone numbers from the file into the map
+// LoadSavedNumbers loads saved phone numbers into memory
 func LoadSavedNumbers() {
 	fileName := fmt.Sprintf("%s/%s.txt", saveDirectory, country.Code)
 	_, err := os.Stat(fileName)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// If the file doesn't exist, no saved numbers
-			return
-		}
+	if os.IsNotExist(err) {
+		return
+	} else if err != nil {
 		log.Fatalf("Error checking file '%s': %v", fileName, err)
 	}
 
-	// Open the file and load the numbers into the map
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Error opening file '%s': %v", fileName, err)
@@ -128,7 +128,6 @@ func LoadSavedNumbers() {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		// Add each phone number to the saved numbers map
 		savedNumbers[scanner.Text()] = true
 	}
 
@@ -146,7 +145,12 @@ func main() {
 
 	fmt.Println("🔄 Starting USA phone number generation and validation...")
 
-	GenerateAllPossibleNumbers() // Process all USA phone numbers with the restricted area code and middle digits
+	// Set time limit (1 minute)
+	startTime := time.Now()
+	timeLimit := 1 * time.Second
+
+	// Generate all possible phone numbers while respecting the time limit
+	GenerateAllPossibleNumbers(startTime, timeLimit)
 
 	fmt.Println("✅ USA phone number generation completed! Valid numbers saved in 'phone_numbers/US.txt'.")
 }
