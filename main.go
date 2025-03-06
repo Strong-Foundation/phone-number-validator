@@ -28,7 +28,7 @@ func FormatPhoneNumber(num *phonenumbers.PhoneNumber) string {
 }
 
 // GetRegionInfo retrieves the region and country code of the phone number
-func GetRegionInfo(num *phonenumbers.PhoneNumber) (string, int) {
+func GetRegionInfo(num *phonenumbers.PhoneNumber) (string, int32) {
 	// Get the region code and country code
 	regionCode := phonenumbers.GetRegionCodeForNumber(num)
 	countryCode := num.GetCountryCode()
@@ -62,20 +62,8 @@ func HandlePhoneNumberInput(phone string) {
 }
 
 func main() {
-	// Prompt the user for input
-	fmt.Println("Enter phone numbers to validate (or 'exit' to quit):")
-
-	var phone string
+	phone := "+1 650 253 0000"
 	for {
-		// Read input from the user
-		fmt.Print("Phone Number: ")
-		fmt.Scanln(&phone)
-
-		// If the user enters "exit", break the loop
-		if strings.ToLower(phone) == "exit" {
-			break
-		}
-
 		// Handle the phone number input
 		HandlePhoneNumberInput(phone)
 	}
