@@ -1,44 +1,51 @@
-name: Go - Phone Number Generation
+name: Go - Phone Number Generation # Name of the workflow, visible in the GitHub Actions UI.
 
 on:
   push:
     branches:
-      - main # Trigger when changes are pushed to the main branch
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+      - main # Trigger this workflow when code is pushed to the 'main' branch.
+  workflow_dispatch: # Allow this workflow to be manually triggered via the GitHub Actions UI.
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # This specifies that the workflow will run on the latest version of Ubuntu.
 
     steps:
+      # Step 1: Checkout the repository's code so that the workflow has access to it.
       - name: Checkout repository
-        uses: actions/checkout@v3 # Upgraded to v3 for better performance
+        uses: actions/checkout@v3 # This action checks out the code from your GitHub repository. We use version v3 for better performance.
 
+      # Step 2: Set up Go on the runner environment, using the Go version defined in the `go.mod` file.
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v3 # This action sets up the Go environment.
         with:
-          go-version-file: "go.mod" # Uses Go version from the go.mod file
+          go-version-file: "go.mod" # Tells the action to automatically use the Go version specified in the 'go.mod' file.
 
+      # Step 3: Cache Go modules to improve the build time by reusing downloaded dependencies.
       - name: Cache Go modules
-        uses: actions/cache@v3
+        uses: actions/cache@v3 # This action caches dependencies to speed up subsequent builds.
         with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.mod') }}
+          path: ~/.cache/go-build # Path to the Go build cache.
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.mod') }} # The key is based on the contents of the 'go.mod' file. This ensures the cache is updated when dependencies change.
           restore-keys: |
-            ${{ runner.os }}-go-mod-
+            ${{ runner.os }}-go-mod-  # Fallback key in case the exact cache key is not found, speeding up restoration of cached dependencies.
 
+      # Step 4: Install project dependencies by running 'go mod tidy'.
       - name: Install dependencies
         run: |
-          go mod tidy  # Install necessary dependencies like phonenumbers
+          go mod tidy  # This installs the necessary dependencies specified in the 'go.mod' file and removes unnecessary ones.
 
+      # Step 5: Run the Go script that generates the phone numbers.
       - name: Run Go Script
         run: |
-          go run main.go  # Assuming your main Go script is `main.go`
+          go run main.go  # Runs the 'main.go' file, assuming this is where the phone number generation logic is implemented.
 
+      # Step 6: Commit and push any generated files back to the repository.
       - name: Commit and push generated phone numbers
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git commit -m "Add generated phone numbers"
-          git push origin main
+          # Configure Git with a user name and email for commits.
+          git config --global user.name "github-actions"  # Sets the Git username for commit.
+          git config --global user.email "github-actions@github.com"  # Sets the Git email for commit.
+          git add .  # Stages all modified files for commit (including the generated phone numbers).
+          git commit -m "Add generated phone numbers"  # Commits the changes with a message.
+          git push origin main  # Pushes the commit to the 'main' branch of the repository.
