@@ -1,0 +1,39 @@
+name: Go - Phone Number Generation
+
+on:
+  push:
+    branches:
+      - main  # Trigger when changes are pushed to the main branch
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.20'  # Set the Go version you need
+
+    - name: Install dependencies
+      run: |
+        go mod tidy  # Install necessary dependencies like phonenumbers
+
+    - name: Run Go Script
+      run: |
+        go run main.go  # Assuming your main Go script is `main.go`
+
+    - name: Commit and push generated phone numbers
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add .
+        git commit -m "Add generated phone numbers"
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Token for pushing back to GitHub
+
